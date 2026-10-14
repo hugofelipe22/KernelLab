@@ -38,8 +38,8 @@ kernellab/
 │   ├── config.json         # quantum, frames, sequência de páginas, critérios
 │   └── access_matrix.json  # matriz de controle de acesso
 ├── tests/              # 37 testes (unittest/pytest)
-├── docs/               # relatório PDF, roteiro do vídeo, gráficos (docs/img), gerador do vídeo
-├── demo.ps1            # demonstração passo a passo (ENTER avança), usada no vídeo
+├── docs/               # relatório PDF, gráficos (docs/img) e saída de exemplo
+├── demo.ps1            # demonstração passo a passo (ENTER avança)
 ├── requirements.txt
 └── README.md
 ```
