@@ -1,0 +1,13 @@
+{
+  "_comment": "Decisão de projeto (menor privilégio): cada processo só recebe permissão nos dispositivos declarados na tabela do enunciado; o log (não listado no enunciado) aceita gravação de todos. Edite livremente.",
+  "devices": ["disco", "rede", "audio", "log"],
+  "permissions": ["read", "write", "execute", "use", "exclusive"],
+  "matrix": {
+    "P1": {"rede": ["use", "read", "write"], "log": ["use", "read", "write"]},
+    "P2": {"rede": ["use", "read", "write"], "log": ["use", "write"]},
+    "P3": {"disco": ["use", "read", "write"], "log": ["use", "write"]},
+    "P4": {"rede": ["use", "write", "exclusive"], "audio": ["use", "write", "exclusive"], "log": ["use", "read", "write"]},
+    "P5": {"disco": ["use", "read", "write", "exclusive"], "log": ["use", "write"]},
+    "P6": {"disco": ["use", "read", "write", "execute"], "rede": ["use", "read"], "log": ["use", "write"]}
+  }
+}

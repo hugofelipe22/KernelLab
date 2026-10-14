@@ -1,0 +1,323 @@
+
+==============================================================================
+ETAPA 1 - ESCALONAMENTO DA CPU
+==============================================================================
+PID | Função                    | Chegada | Burst | Prior. | Mem (MB) | Dispositivo
+----+---------------------------+---------+-------+--------+----------+------------
+P1  | Monitoramento cardíaco    | 0       | 8     | 1      | 120      | rede       
+P2  | Transmissão de telemetria | 1       | 4     | 2      | 80       | rede       
+P3  | Geração de relatórios     | 2       | 9     | 4      | 200      | disco      
+P4  | Emissão de alarme crítico | 3       | 2     | 0      | 60       | audio, rede
+P5  | Backup do sistema         | 5       | 12    | 5      | 300      | disco      
+P6  | Atualização de dados      | 6       | 6     | 3      | 150      | disco, rede
+(menor número de prioridade = maior prioridade)
+
+--- FCFS ---
+Ordem de execução: P1 -> P2 -> P3 -> P4 -> P5 -> P6
+Diagrama de Gantt:
+  P1 ########.................................
+  P2 ........####.............................
+  P3 ............#########....................
+  P4 .....................##..................
+  P5 .......................############......
+  P6 ...................................######
+     0    5    10   15   20   25   30   35   40    (tempo; total = 41)
+  Sequência: P1[0-8] -> P2[8-12] -> P3[12-21] -> P4[21-23] -> P5[23-35] -> P6[35-41]
+PID   | Cheg | Burst | Término | Espera | Retorno | Resposta | Ultrapassado | Atraso exc. | Starvation
+------+------+-------+---------+--------+---------+----------+--------------+-------------+-----------
+P1    | 0    | 8     | 8       | 0      | 8       | 0        | 0            | -           | -         
+P2    | 1    | 4     | 12      | 7      | 11      | 7        | 0            | -           | -         
+P3    | 2    | 9     | 21      | 10     | 19      | 10       | 0            | -           | -         
+P4    | 3    | 2     | 23      | 18     | 20      | 18       | 0            | SIM         | -         
+P5    | 5    | 12    | 35      | 18     | 30      | 18       | 0            | -           | -         
+P6    | 6    | 6     | 41      | 29     | 35      | 29       | 0            | SIM         | -         
+MÉDIA |      |       |         | 13.67  | 20.50   | 13.67    |              |             |           
+Trocas de contexto: 5 | Justiça (Jain): 0.674
+Atraso excessivo (espera >= 2x burst): P4, P6 | Risco de starvation: nenhum
+
+--- SJF ---
+Ordem de execução: P1 -> P4 -> P2 -> P6 -> P3 -> P5
+Diagrama de Gantt:
+  P1 ########.................................
+  P2 ..........####...........................
+  P3 ....................#########............
+  P4 ........##...............................
+  P5 .............................############
+  P6 ..............######.....................
+     0    5    10   15   20   25   30   35   40    (tempo; total = 41)
+  Sequência: P1[0-8] -> P4[8-10] -> P2[10-14] -> P6[14-20] -> P3[20-29] -> P5[29-41]
+PID   | Cheg | Burst | Término | Espera | Retorno | Resposta | Ultrapassado | Atraso exc. | Starvation
+------+------+-------+---------+--------+---------+----------+--------------+-------------+-----------
+P1    | 0    | 8     | 8       | 0      | 8       | 0        | 0            | -           | -         
+P2    | 1    | 4     | 14      | 9      | 13      | 9        | 1            | SIM         | -         
+P3    | 2    | 9     | 29      | 18     | 27      | 18       | 2            | SIM         | -         
+P4    | 3    | 2     | 10      | 5      | 7       | 5        | 0            | SIM         | -         
+P5    | 5    | 12    | 41      | 24     | 36      | 24       | 1            | SIM         | SIM       
+P6    | 6    | 6     | 20      | 8      | 14      | 8        | 0            | -           | -         
+MÉDIA |      |       |         | 10.67  | 17.50   | 10.67    |              |             |           
+Trocas de contexto: 5 | Justiça (Jain): 0.761
+Atraso excessivo (espera >= 2x burst): P2, P3, P4, P5 | Risco de starvation: P5
+
+--- Round Robin (q=3) ---
+Ordem de execução: P1 -> P2 -> P3 -> P4 -> P1 -> P5 -> P6 -> P2 -> P3 -> P1 -> P5 -> P6 -> P3 -> P5
+Diagrama de Gantt:
+  P1 ###........###..........##...............
+  P2 ...###..............#....................
+  P3 ......###............###........###......
+  P4 .........##..............................
+  P5 ..............###.........###......######
+  P6 .................###.........###.........
+     0    5    10   15   20   25   30   35   40    (tempo; total = 41)
+  Sequência: P1[0-3] -> P2[3-6] -> P3[6-9] -> P4[9-11] -> P1[11-14] -> P5[14-17] -> P6[17-20] -> P2[20-21] -> P3[21-24] -> P1[24-26] -> P5[26-29] -> P6[29-32] -> P3[32-35] -> P5[35-41]
+PID   | Cheg | Burst | Término | Espera | Retorno | Resposta | Ultrapassado | Atraso exc. | Starvation
+------+------+-------+---------+--------+---------+----------+--------------+-------------+-----------
+P1    | 0    | 8     | 26      | 18     | 26      | 0        | 0            | SIM         | -         
+P2    | 1    | 4     | 21      | 16     | 20      | 2        | 0            | SIM         | -         
+P3    | 2    | 9     | 35      | 24     | 33      | 4        | 0            | SIM         | -         
+P4    | 3    | 2     | 11      | 6      | 8       | 6        | 0            | SIM         | -         
+P5    | 5    | 12    | 41      | 24     | 36      | 9        | 0            | SIM         | -         
+P6    | 6    | 6     | 32      | 20     | 26      | 11       | 0            | SIM         | -         
+MÉDIA |      |       |         | 18.00  | 24.83   | 5.33     |              |             |           
+Trocas de contexto: 13 | Justiça (Jain): 0.972
+Atraso excessivo (espera >= 2x burst): P1, P2, P3, P4, P5, P6 | Risco de starvation: nenhum
+
+--- Prioridade ---
+Ordem de execução: P1 -> P4 -> P2 -> P6 -> P3 -> P5
+Diagrama de Gantt:
+  P1 ########.................................
+  P2 ..........####...........................
+  P3 ....................#########............
+  P4 ........##...............................
+  P5 .............................############
+  P6 ..............######.....................
+     0    5    10   15   20   25   30   35   40    (tempo; total = 41)
+  Sequência: P1[0-8] -> P4[8-10] -> P2[10-14] -> P6[14-20] -> P3[20-29] -> P5[29-41]
+PID   | Cheg | Burst | Término | Espera | Retorno | Resposta | Ultrapassado | Atraso exc. | Starvation
+------+------+-------+---------+--------+---------+----------+--------------+-------------+-----------
+P1    | 0    | 8     | 8       | 0      | 8       | 0        | 0            | -           | -         
+P2    | 1    | 4     | 14      | 9      | 13      | 9        | 1            | SIM         | -         
+P3    | 2    | 9     | 29      | 18     | 27      | 18       | 2            | SIM         | -         
+P4    | 3    | 2     | 10      | 5      | 7       | 5        | 0            | SIM         | -         
+P5    | 5    | 12    | 41      | 24     | 36      | 24       | 1            | SIM         | SIM       
+P6    | 6    | 6     | 20      | 8      | 14      | 8        | 0            | -           | -         
+MÉDIA |      |       |         | 10.67  | 17.50   | 10.67    |              |             |           
+Trocas de contexto: 5 | Justiça (Jain): 0.761
+Atraso excessivo (espera >= 2x burst): P2, P3, P4, P5 | Risco de starvation: P5
+
+--- Prioridade (preemptiva)  [variante extra, não obrigatória] ---
+Ordem de execução: P1 -> P4 -> P1 -> P2 -> P6 -> P3 -> P5
+Diagrama de Gantt:
+  P1 ###..#####...............................
+  P2 ..........####...........................
+  P3 ....................#########............
+  P4 ...##....................................
+  P5 .............................############
+  P6 ..............######.....................
+     0    5    10   15   20   25   30   35   40    (tempo; total = 41)
+  Sequência: P1[0-3] -> P4[3-5] -> P1[5-10] -> P2[10-14] -> P6[14-20] -> P3[20-29] -> P5[29-41]
+PID   | Cheg | Burst | Término | Espera | Retorno | Resposta | Ultrapassado | Atraso exc. | Starvation
+------+------+-------+---------+--------+---------+----------+--------------+-------------+-----------
+P1    | 0    | 8     | 10      | 2      | 10      | 0        | 0            | -           | -         
+P2    | 1    | 4     | 14      | 9      | 13      | 9        | 1            | SIM         | -         
+P3    | 2    | 9     | 29      | 18     | 27      | 18       | 2            | SIM         | -         
+P4    | 3    | 2     | 5       | 0      | 2       | 0        | 0            | -           | -         
+P5    | 5    | 12    | 41      | 24     | 36      | 24       | 1            | SIM         | SIM       
+P6    | 6    | 6     | 20      | 8      | 14      | 8        | 0            | -           | -         
+MÉDIA |      |       |         | 10.17  | 17.00   | 9.83     |              |             |           
+Trocas de contexto: 6 | Justiça (Jain): 0.799
+Atraso excessivo (espera >= 2x burst): P2, P3, P5 | Risco de starvation: P5
+
+==============================================================================
+ETAPA 2 - COMPARAÇÃO DOS ESCALONADORES
+==============================================================================
+Algoritmo               | Espera | Retorno | Resposta | Trocas | Jain  | Espera alarme | Maior espera | Atraso exc.       | Starvation
+------------------------+--------+---------+----------+--------+-------+---------------+--------------+-------------------+-----------
+FCFS                    | 13.67  | 20.50   | 13.67    | 5      | 0.674 | 18            | 29           | P4,P6             | -         
+SJF                     | 10.67  | 17.50   | 10.67    | 5      | 0.761 | 5             | 24           | P2,P3,P4,P5       | P5        
+Round Robin (q=3)       | 18.00  | 24.83   | 5.33     | 13     | 0.972 | 6             | 24           | P1,P2,P3,P4,P5,P6 | -         
+Prioridade              | 10.67  | 17.50   | 10.67    | 5      | 0.761 | 5             | 24           | P2,P3,P4,P5       | P5        
+Prioridade (preemptiva) | 10.17  | 17.00   | 9.83     | 6      | 0.799 | 0             | 24           | P2,P3,P5          | P5        
+
+Entre os 4 algoritmos obrigatórios:
+  Menor tempo médio de espera ........ SJF e Prioridade (10.67)
+  Melhor tempo médio de resposta ..... Round Robin (q=3) (5.33)
+  Alarme tratado com mais eficiência . SJF e Prioridade (espera 5, retorno 7)
+  Maior risco de starvation .......... SJF e Prioridade (em risco: P5)
+  CPU distribuída de forma mais justa  Round Robin (q=3) (Jain 0.972)
+
+Incluindo a variante preemptiva:
+  Menor tempo médio de espera ........ Prioridade (preemptiva) (10.17)
+  Melhor tempo médio de resposta ..... Round Robin (q=3) (5.33)
+  Alarme tratado com mais eficiência . Prioridade (preemptiva) (espera 0, retorno 2)
+  Maior risco de starvation .......... Prioridade (preemptiva) (em risco: P5)
+  CPU distribuída de forma mais justa  Round Robin (q=3) (Jain 0.972)
+
+Recomendação para a MedControl (critério: 1º menor espera do alarme, 2º menos processos em risco de starvation, 3º menor espera média, 4º maior justiça):
+  -> Prioridade (preemptiva)  | alarme espera 0 | espera média 10.17 | em risco de starvation: P5
+
+==============================================================================
+ETAPA 3 - GERENCIAMENTO DE MEMÓRIA (SUBSTITUIÇÃO DE PÁGINAS)
+==============================================================================
+Frames: 4 | Referências (17): 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5, 2, 1, 5, 3, 2
+
+--- FIFO ---
+Ref | F1 | F2 | F3 | F4 | Resultado | Removida
+----+----+----+----+----+-----------+---------
+1   | 1  | -  | -  | -  | FALTA     |         
+2   | 1  | 2  | -  | -  | FALTA     |         
+3   | 1  | 2  | 3  | -  | FALTA     |         
+4   | 1  | 2  | 3  | 4  | FALTA     |         
+1   | 1  | 2  | 3  | 4  | hit       |         
+2   | 1  | 2  | 3  | 4  | hit       |         
+5   | 5  | 2  | 3  | 4  | FALTA     | 1       
+1   | 5  | 1  | 3  | 4  | FALTA     | 2       
+2   | 5  | 1  | 2  | 4  | FALTA     | 3       
+3   | 5  | 1  | 2  | 3  | FALTA     | 4       
+4   | 4  | 1  | 2  | 3  | FALTA     | 5       
+5   | 4  | 5  | 2  | 3  | FALTA     | 1       
+2   | 4  | 5  | 2  | 3  | hit       |         
+1   | 4  | 5  | 1  | 3  | FALTA     | 2       
+5   | 4  | 5  | 1  | 3  | hit       |         
+3   | 4  | 5  | 1  | 3  | hit       |         
+2   | 4  | 5  | 1  | 2  | FALTA     | 3       
+Hits: 5 | Faults: 12 | Taxa de faltas: 70.6% (12/17)
+
+--- LRU ---
+Ref | F1 | F2 | F3 | F4 | Resultado | Removida
+----+----+----+----+----+-----------+---------
+1   | 1  | -  | -  | -  | FALTA     |         
+2   | 1  | 2  | -  | -  | FALTA     |         
+3   | 1  | 2  | 3  | -  | FALTA     |         
+4   | 1  | 2  | 3  | 4  | FALTA     |         
+1   | 1  | 2  | 3  | 4  | hit       |         
+2   | 1  | 2  | 3  | 4  | hit       |         
+5   | 1  | 2  | 5  | 4  | FALTA     | 3       
+1   | 1  | 2  | 5  | 4  | hit       |         
+2   | 1  | 2  | 5  | 4  | hit       |         
+3   | 1  | 2  | 5  | 3  | FALTA     | 4       
+4   | 1  | 2  | 4  | 3  | FALTA     | 5       
+5   | 5  | 2  | 4  | 3  | FALTA     | 1       
+2   | 5  | 2  | 4  | 3  | hit       |         
+1   | 5  | 2  | 4  | 1  | FALTA     | 3       
+5   | 5  | 2  | 4  | 1  | hit       |         
+3   | 5  | 2  | 3  | 1  | FALTA     | 4       
+2   | 5  | 2  | 3  | 1  | hit       |         
+Hits: 7 | Faults: 10 | Taxa de faltas: 58.8% (10/17)
+
+--- Optimal ---
+Ref | F1 | F2 | F3 | F4 | Resultado | Removida
+----+----+----+----+----+-----------+---------
+1   | 1  | -  | -  | -  | FALTA     |         
+2   | 1  | 2  | -  | -  | FALTA     |         
+3   | 1  | 2  | 3  | -  | FALTA     |         
+4   | 1  | 2  | 3  | 4  | FALTA     |         
+1   | 1  | 2  | 3  | 4  | hit       |         
+2   | 1  | 2  | 3  | 4  | hit       |         
+5   | 1  | 2  | 3  | 5  | FALTA     | 4       
+1   | 1  | 2  | 3  | 5  | hit       |         
+2   | 1  | 2  | 3  | 5  | hit       |         
+3   | 1  | 2  | 3  | 5  | hit       |         
+4   | 1  | 2  | 4  | 5  | FALTA     | 3       
+5   | 1  | 2  | 4  | 5  | hit       |         
+2   | 1  | 2  | 4  | 5  | hit       |         
+1   | 1  | 2  | 4  | 5  | hit       |         
+5   | 1  | 2  | 4  | 5  | hit       |         
+3   | 3  | 2  | 4  | 5  | FALTA     | 1       
+2   | 3  | 2  | 4  | 5  | hit       |         
+Hits: 10 | Faults: 7 | Taxa de faltas: 41.2% (7/17)
+
+Algoritmo | Hits | Faults | Taxa de faltas
+----------+------+--------+---------------
+FIFO      | 5    | 12     | 70.6%         
+LRU       | 7    | 10     | 58.8%         
+Optimal   | 10   | 7      | 41.2%         
+
+Melhor resultado absoluto: Optimal (7 faltas) - referência teórica (precisa conhecer o futuro).
+Melhor algoritmo implementável: LRU (10 faltas).
+Diferença: FIFO descarta a página mais antiga na memória, mesmo que seja reutilizada logo (12 faltas); LRU usa o passado recente como previsão do futuro (10); Optimal escolhe a página cujo próximo uso é mais distante (7).
+
+Faltas x quantidade de frames:
+Frames | FIFO | LRU | Optimal
+-------+------+-----+--------
+1      | 17   | 17  | 17     
+2      | 17   | 17  | 13     
+3      | 14   | 14  | 9      
+4      | 12   | 10  | 7      
+5      | 5    | 5   | 5      
+6      | 5    | 5   | 5      
+7      | 5    | 5   | 5      
+
+==============================================================================
+ETAPA 4 - CONTROLE DE DISPOSITIVOS
+==============================================================================
+Matriz de controle de acesso (X = permitido):
+
+Proc  Dispositivo  ler  gravar  executar  usar  exclusivo
+----  -----------  ---  ------  --------  ----  ---------
+P1    disco         -     -        -       -        -    
+P1    rede          X     X        -       X        -    
+P1    audio         -     -        -       -        -    
+P1    log           X     X        -       X        -    
+P2    disco         -     -        -       -        -    
+P2    rede          X     X        -       X        -    
+P2    audio         -     -        -       -        -    
+P2    log           -     X        -       X        -    
+P3    disco         X     X        -       X        -    
+P3    rede          -     -        -       -        -    
+P3    audio         -     -        -       -        -    
+P3    log           -     X        -       X        -    
+P4    disco         -     -        -       -        -    
+P4    rede          -     X        -       X        X    
+P4    audio         -     X        -       X        X    
+P4    log           X     X        -       X        -    
+P5    disco         X     X        -       X        X    
+P5    rede          -     -        -       -        -    
+P5    audio         -     -        -       -        -    
+P5    log           -     X        -       X        -    
+P6    disco         X     X        X       X        -    
+P6    rede          X     -        -       X        -    
+P6    audio         -     -        -       -        -    
+P6    log           -     X        -       X        -    
+
+--- Disco concorrente: COM mutex (fila FIFO) ---
+  [t= 0.00s] P3  SOLICITA disco (write)
+  [t= 0.00s] P3  USA disco (write, 0.25s)
+  [t= 0.05s] P5  SOLICITA disco (acesso EXCLUSIVO)
+  [t= 0.10s] P6  SOLICITA disco (read)
+  [t= 0.15s] P4  NEGADO -> P4 não tem permissão 'use' em 'disco'
+  [t= 0.25s] P3  LIBERA disco
+  [t= 0.25s] P5  AGUARDOU na fila (1 à frente)
+  [t= 0.25s] P5  ENTRA em sessão exclusiva de disco
+  [t= 0.25s] P5  USA disco (write, 0.25s)
+  [t= 0.50s] P5  USA disco (write, 0.25s)
+  [t= 0.75s] P5  SAI da sessão exclusiva de disco
+  [t= 0.75s] P6  AGUARDOU na fila (2 à frente)
+  [t= 0.75s] P6  USA disco (read, 0.25s)
+  [t= 1.00s] P6  LIBERA disco
+  Máx. acessos simultâneos: 1 | violações de exclusão mútua: 0 | negados: P4
+
+--- Disco concorrente: SEM mutex (sem controle) ---
+  [t= 0.00s] P3  SOLICITA disco (write)
+  [t= 0.00s] P3  USA disco (write, 0.25s)
+  [t= 0.05s] P5  SOLICITA disco (acesso EXCLUSIVO)
+  [t= 0.05s] P5  ENTRA em sessão exclusiva de disco
+  [t= 0.05s] P5  USA disco (write, 0.25s)
+  [t= 0.10s] P6  SOLICITA disco (read)
+  [t= 0.10s] P6  USA disco (read, 0.25s)
+  [t= 0.15s] P4  NEGADO -> P4 não tem permissão 'use' em 'disco'
+  [t= 0.25s] P3  LIBERA disco
+  [t= 0.30s] P5  USA disco (write, 0.25s)
+  [t= 0.35s] P6  LIBERA disco
+  [t= 0.55s] P5  SAI da sessão exclusiva de disco
+  Máx. acessos simultâneos: 3 | violações de exclusão mútua: 3 | negados: P4
+
+==============================================================================
+ETAPA 5 - GRÁFICOS GERADOS
+==============================================================================
+  C:\Users\Camila\Projetos\KernelLab\docs\img\gantt.png
+  C:\Users\Camila\Projetos\KernelLab\docs\img\tempos_medios.png
+  C:\Users\Camila\Projetos\KernelLab\docs\img\trocas_contexto.png
+  C:\Users\Camila\Projetos\KernelLab\docs\img\espera_por_processo.png
+  C:\Users\Camila\Projetos\KernelLab\docs\img\justica.png
+  C:\Users\Camila\Projetos\KernelLab\docs\img\memoria_faults_hits.png
+  C:\Users\Camila\Projetos\KernelLab\docs\img\memoria_frames.png

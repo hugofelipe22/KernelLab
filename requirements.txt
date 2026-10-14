@@ -1,0 +1,6 @@
+# Simulador (gráficos)
+matplotlib>=3.7
+# Testes
+pytest>=7.0
+# Apenas para gerar o relatório em PDF (docs/gerar_relatorio.py)
+reportlab>=4.0

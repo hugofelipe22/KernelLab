@@ -1,0 +1,8 @@
+{
+  "quantum": 3,
+  "frames": 4,
+  "reference_string": [1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5, 2, 1, 5, 3, 2],
+  "excessive_delay_factor": 2.0,
+  "starvation_factor": 2.0,
+  "alarm_pid": "P4"
+}
